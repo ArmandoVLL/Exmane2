@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudiantes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <h2 class="text-center mb-4">Administrador de estudiantes</h2>
+
+    <!-- Formulario para agregar tareas -->
+    <div class="card p-3 shadow mb-4">
+        <form action="/add" method="post">
+            <label for="actividad" class="form-label fw-bold">Nombre del alumno</label>
+            <input type="text" id="actividad" name="actividad" required class="form-control" placeholder="Nombre del alumno">
+            <label for="matricula" class="form-label fw-bold">Matricula</label>
+            <input type="text" id="matricula" name="matricula" required class="form-control" placeholder="Matricula del alumno">  
+            <label for="edad" class="form-label fw-bold">Edad</label>
+            <input type="text" id="edad" name="edad" required class="form-control" placeholder="Edad del alumno"> 
+            <label for="grado" class="form-label fw-bold">Grado</label>
+            <input type="text" id="grado" name="grado" required class="form-control" placeholder="Grado del alumno">      
+
+            <button type="submit" class="btn btn-success mt-2 w-100">Agregar</button>
+        </form>
+    </div>
+
+    <!-- Tabla de tareas -->
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Matricula</th> 
+                <th>Edad</th> 
+                <th>Grado</th> 
+                <th>Acciones</th>    
+            </tr>   
+        </thead>
+        <tbody>
+            {% for tarea in actividades %}
+            <tr>
+                <td>{{ tarea[0] }}</td>
+                <td>{{ tarea[1] }}</td>
+                <td>{{ tarea[2] }}</td>
+                <td>{{ tarea[3] }}</td>
+                <td>{{ tarea[4] }}</td>
+                <td>
+                    <!-- Botón para abrir el modal con los datos de la tarea -->
+                    <button class="btn btn-warning" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#modalActualizar"
+                            data-id="{{ tarea[0] }}"
+                            data-nombre="{{ tarea[1] }}"
+                            data-matricula="{{ tarea[2] }}"
+                            data-edad="{{ tarea[3] }}"
+                            data-grado="{{ tarea[4] }}">
+                        Actualizar
+                    </button>
+                    <a href="#" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEliminar" 
+                       onclick="setEliminarUrl('{{ tarea[0] }}')">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal de actualización -->
+    <div class="modal fade" id="modalActualizar" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Actualizar datos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Alerta de validación de campos -->
+                    <div id="alerta" class="alert alert-danger d-none" role="alert">
+                        Por favor, complete todos los campos.
+                    </div>
+                    <form id="formActualizar" method="post" onsubmit="return validarCampos()">
+                        <input type="hidden" id="alumndoId" name="alumndoId">
+                        
+                        <div class="mb-3">
+                            <label for="nuevo_nombre" class="form-label">Nombre</label>
+                            <input type="text" id="nuevo_nombre" name="nuevo_nombre" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="nueva_matricula" class="form-label">Matricula</label>
+                            <input type="text" id="nueva_matricula" name="nueva_matricula" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="nueva_edad" class="form-label">Edad</label>
+                            <input type="text" id="nueva_edad" name="nueva_edad" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="nuevo_grado" class="form-label">Grado</label>
+                            <input type="text" id="nuevo_grado" name="nuevo_grado" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de eliminar -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalConfirmar" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">¿Está seguro que desea eliminar los datos del estudiante?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    Esta acción no se puede deshacer. Si eliminas al estudiante, se borrará permanentemente, por lo cual significaría la baja del colegio.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnEliminarConfirmado" href="#" class="btn btn-danger">Eliminar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Capturar el evento cuando el modal se abre para actualizar
+        var modalActualizar = document.getElementById('modalActualizar');
+        modalActualizar.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;  // Botón que activó el modal
+            var id = button.getAttribute('data-id');
+            var nombre = button.getAttribute('data-nombre');
+            var matricula = button.getAttribute('data-matricula');
+            var edad = button.getAttribute('data-edad');
+            var grado = button.getAttribute('data-grado');
+
+            // Rellenar los campos del formulario en el modal
+            document.getElementById('alumndoId').value = id;
+            document.getElementById('nuevo_nombre').value = nombre;
+            document.getElementById('nueva_matricula').value = matricula;
+            document.getElementById('nueva_edad').value = edad;
+            document.getElementById('nuevo_grado').value = grado;
+
+            // Cambiar la acción del formulario dinámicamente
+            document.getElementById('formActualizar').action = "/update_actividad/" + id;
+        });
+
+        // Función que establece la URL de eliminación al ID de la tarea
+        function setEliminarUrl(alumndoId) {
+            var eliminarBtn = document.getElementById('btnEliminarConfirmado');
+            eliminarBtn.href = '/delete/' + alumndoId; 
+        }
+
+        // Validación de campos antes de enviar el formulario de actualización
+        function validarCampos() {
+            var nuevoNombre = document.getElementById('nuevo_nombre').value.trim();
+            var nuevaEdad = document.getElementById('nueva_edad').value.trim();
+            var nuevoGrado = document.getElementById('nuevo_grado').value.trim();
+            var alerta = document.getElementById('alerta');
+
+            // Si alguno de los campos está vacío, mostrar alerta
+            if (!nuevoNombre || !nuevaEdad || !nuevoGrado) {
+                alerta.classList.remove('d-none');  // Muestra la alerta
+                document.getElementById('nuevo_nombre').classList.add('is-invalid');  // Marca como inválido
+                document.getElementById('nueva_edad').classList.add('is-invalid');  // Marca como inválido
+                document.getElementById('nuevo_grado').classList.add('is-invalid');  // Marca como inválido
+                return false;  // Previene el envío del formulario
+            }
+
+            // Si los campos son válidos, eliminar la clase de error y enviar el formulario
+            alerta.classList.add('d-none');  // Oculta la alerta
+            document.getElementById('nuevo_nombre').classList.remove('is-invalid');
+            document.getElementById('nueva_edad').classList.remove('is-invalid');
+            document.getElementById('nuevo_grado').classList.remove('is-invalid');
+            document.getElementById('nuevo_nombre').classList.add('is-valid');
+            document.getElementById('nueva_edad').classList.add('is-valid');
+            document.getElementById('nuevo_grado').classList.add('is-valid');
+            return true;  // Permite el envío del formulario
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
